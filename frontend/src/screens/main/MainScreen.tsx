@@ -21,6 +21,7 @@ const MainScreen: React.FC = () => {
   const navigation = useNavigation();
   const [wines, setWines] = useState<Wine[]>([]);
   const [loading, setLoading] = useState(false);
+  const [displayCount, setDisplayCount] = useState(3); // Add state to track how many wines to display
 
   useEffect(() => {
     loadWines();
@@ -42,6 +43,14 @@ const MainScreen: React.FC = () => {
     navigation.navigate('Camera' as never);
   };
 
+  const handleLoadMore = () => {
+    setDisplayCount(prev => prev + 5); // Show 5 more wines each time
+  };
+
+  const handleShowAll = () => {
+    setDisplayCount(wines.length); // Show all wines
+  };
+
   const QuickActionCard = ({ icon, title, count, color }: any) => (
     <TouchableOpacity style={[styles.quickActionCard, { borderLeftColor: color }]}>
       <Text style={styles.quickActionIcon}>{icon}</Text>
@@ -53,11 +62,11 @@ const MainScreen: React.FC = () => {
   const WineDiscoveryCard = ({ wine, price, rating, source, timeAgo, isLiked }: any) => (
     <TouchableOpacity style={styles.discoveryCard}>
       <View style={[styles.wineCardIcon, { backgroundColor: wine.wine_type === 'red' ? '#DC2626' : '#7C3AED' }]}>
-        <Text style={styles.wineCardText}></Text>
+        <Text style={styles.wineCardText}>🍷</Text>
       </View>
       <View style={styles.discoveryContent}>
         <Text style={styles.discoveryWineName}>{wine.name}</Text>
-        <Text style={styles.discoveryWineDetails}>{wine.region}, {wine.country}  {wine.grape_variety}</Text>
+        <Text style={styles.discoveryWineDetails}>{wine.region}, {wine.country} • {wine.grape_variety}</Text>
         <View style={styles.discoveryMeta}>
           <Text style={styles.discoveryPrice}>{price}</Text>
           <Text style={styles.discoveryRating}>{rating} pts {source}</Text>
@@ -65,7 +74,7 @@ const MainScreen: React.FC = () => {
         <Text style={styles.discoveryTime}>Added {timeAgo}</Text>
       </View>
       <TouchableOpacity style={styles.heartButton}>
-        <Text style={styles.heartIcon}>{isLiked ? '' : ''}</Text>
+        <Text style={styles.heartIcon}>{isLiked ? '❤️' : '🤍'}</Text>
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -80,7 +89,7 @@ const MainScreen: React.FC = () => {
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>Discover</Text>
           <TouchableOpacity style={styles.profileButton}>
-            <Text style={styles.profileIcon}></Text>
+            <Text style={styles.profileIcon}>👤</Text>
           </TouchableOpacity>
         </View>
       </LinearGradient>
@@ -89,7 +98,7 @@ const MainScreen: React.FC = () => {
         {/* Search Bar */}
         <View style={styles.searchContainer}>
           <View style={styles.searchBar}>
-            <Text style={styles.searchIcon}></Text>
+            <Text style={styles.searchIcon}>🔍</Text>
             <Text style={styles.searchPlaceholder}>Search wines, regions, vintages...</Text>
           </View>
         </View>
@@ -97,7 +106,7 @@ const MainScreen: React.FC = () => {
         {/* Scan Button */}
         <TouchableOpacity style={styles.scanSection} onPress={handleScanPress}>
           <View style={styles.scanButton}>
-            <Text style={styles.scanButtonIcon}></Text>
+            <Text style={styles.scanButtonIcon}>📷</Text>
           </View>
           <View style={styles.scanTextContainer}>
             <Text style={styles.scanTitle}>Scan a Wine Label</Text>
@@ -110,19 +119,19 @@ const MainScreen: React.FC = () => {
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.quickActionsGrid}>
             <QuickActionCard 
-              icon="" 
+              icon="❤️" 
               title="Favorites" 
               count={wines.length + ' wines'}
               color="#DC2626"
             />
             <QuickActionCard 
-              icon="" 
+              icon="⭐" 
               title="Wishlist" 
               count="3 wines"
               color="#F59E0B"
             />
             <QuickActionCard 
-              icon="" 
+              icon="🍷" 
               title="Collection" 
               count={wines.length + ' wines'}
               color="#7C3AED"
@@ -133,27 +142,38 @@ const MainScreen: React.FC = () => {
         {/* Recent Discoveries */}
         <View style={styles.recentSection}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent Discoveries</Text>
-            <TouchableOpacity>
+            <Text style={styles.sectionTitle}>Recent Discoveries ({wines.length} total)</Text>
+            <TouchableOpacity onPress={handleShowAll}>
               <Text style={styles.seeAllText}>See All</Text>
             </TouchableOpacity>
           </View>
 
           {wines.length > 0 ? (
-            wines.slice(0, 3).map((wine, index) => (
-              <WineDiscoveryCard
-                key={wine.id || index}
-                wine={wine}
-                price={'$' + (Math.random() * 200 + 50).toFixed(0)}
-                rating={(Math.random() * 20 + 80).toFixed(0) + ' pts'}
-                source={Math.random() > 0.5 ? 'Wine Spectator' : 'Robert Parker'}
-                timeAgo={index === 0 ? '3 days ago' : index === 1 ? '1 week ago' : '2 weeks ago'}
-                isLiked={Math.random() > 0.5}
-              />
-            ))
+            <>
+              {wines.slice(0, displayCount).map((wine, index) => (
+                <WineDiscoveryCard
+                  key={wine.id || index}
+                  wine={wine}
+                  price={'$' + (Math.random() * 200 + 50).toFixed(0)}
+                  rating={(Math.random() * 20 + 80).toFixed(0) + ' pts'}
+                  source={Math.random() > 0.5 ? 'Wine Spectator' : 'Robert Parker'}
+                  timeAgo={index === 0 ? '3 days ago' : index === 1 ? '1 week ago' : `${Math.floor(index / 7) + 1} weeks ago`}
+                  isLiked={Math.random() > 0.5}
+                />
+              ))}
+              
+              {/* Load More Button */}
+              {displayCount < wines.length && (
+                <TouchableOpacity style={styles.loadMoreButton} onPress={handleLoadMore}>
+                  <Text style={styles.loadMoreText}>
+                    Load More ({wines.length - displayCount} remaining)
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </>
           ) : (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}></Text>
+              <Text style={styles.emptyIcon}>🍷</Text>
               <Text style={styles.emptyTitle}>No wines discovered yet</Text>
               <Text style={styles.emptySubtitle}>Start scanning wine labels to build your collection</Text>
             </View>
@@ -164,23 +184,23 @@ const MainScreen: React.FC = () => {
       {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
         <TouchableOpacity style={[styles.navItem, styles.activeNavItem]}>
-          <Text style={[styles.navIcon, styles.activeNavIcon]}></Text>
+          <Text style={[styles.navIcon, styles.activeNavIcon]}>🔍</Text>
           <Text style={[styles.navLabel, styles.activeNavLabel]}>Discover</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={handleScanPress}>
-          <Text style={styles.navIcon}></Text>
+          <Text style={styles.navIcon}>📷</Text>
           <Text style={styles.navLabel}>Camera</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem}>
-          <Text style={styles.navIcon}></Text>
+          <Text style={styles.navIcon}>🍷</Text>
           <Text style={styles.navLabel}>Collection</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem}>
-          <Text style={styles.navIcon}></Text>
+          <Text style={styles.navIcon}>👤</Text>
           <Text style={styles.navLabel}>Profile</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem}>
-          <Text style={styles.navIcon}></Text>
+          <Text style={styles.navIcon}>⋯</Text>
           <Text style={styles.navLabel}>More</Text>
         </TouchableOpacity>
       </View>
@@ -405,6 +425,20 @@ const styles = StyleSheet.create({
   },
   heartIcon: {
     fontSize: 20,
+  },
+  loadMoreButton: {
+    backgroundColor: '#8B5CF6',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  loadMoreText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
   emptyState: {
     alignItems: 'center',
