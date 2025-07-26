@@ -246,11 +246,32 @@ async def save_wine(wine_data: dict):
     Save wine information to database
     """
     try:
-        response = supabase.table('wines').insert(wine_data).execute()
+        print(f"Attempting to save wine: {wine_data}")
+        
+        # Clean the data - remove None values and ensure proper types
+        clean_data = {}
+        for key, value in wine_data.items():
+            if value is not None and value != "null":
+                clean_data[key] = value
+        
+        print(f"Clean data: {clean_data}")
+        
+        response = supabase.table('wines').insert(clean_data).execute()
+        print(f"Supabase insert response: {response}")
+        
         return JSONResponse(content={
             "success": True,
             "data": response.data,
             "message": "Wine saved successfully"
         })
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error saving wine: {str(e)}")
+        print(f"Save wine error: {str(e)}")
+        print(f"Error type: {type(e).__name__}")
+        import traceback
+        traceback.print_exc()
+        
+        return JSONResponse(content={
+            "success": False,
+            "data": [],
+            "message": f"Error saving wine: {str(e)}"
+        }, status_code=500) 
