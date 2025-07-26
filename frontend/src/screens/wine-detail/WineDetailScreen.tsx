@@ -70,44 +70,28 @@ const WineDetailScreen: React.FC = () => {
     setPanelExpanded(!panelExpanded);
   };
 
-  // Fetch wine ratings from the internet
+  // Fetch wine ratings using your API
   const fetchWineRating = async (wine: Wine) => {
     try {
       setLoadingRating(true);
+      console.log('🔍 Fetching wine rating for:', wine.name);
       
-      // Search query for wine ratings
-      const searchQuery = `${wine.name} ${wine.winery || ''} ${wine.vintage || ''} wine rating review`;
+      const response = await vinousAPI.getWineRating(wine);
       
-      // You can use multiple sources - here's an example with Wine Spectator/Vivino style search
-      const response = await fetch('YOUR_WINE_RATING_API_ENDPOINT', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer YOUR_API_KEY'
-        },
-        body: JSON.stringify({
-          query: searchQuery,
-          wine_name: wine.name,
-          vintage: wine.vintage,
-          producer: wine.winery,
-          region: wine.region
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
+      if (response.success && response.data) {
         setWineRating({
-          score: data.rating || 85,
-          source: data.source || 'Wine Spectator',
-          maxScore: data.maxScore || 100
+          score: response.data.rating,
+          source: response.data.source,
+          maxScore: response.data.max_rating || 100
         });
+        console.log('✅ Wine rating set successfully:', response.data);
       } else {
-        // Fallback to estimated rating based on wine characteristics
+        console.log('⚠️ No rating data, using fallback');
         const estimatedRating = estimateWineRating(wine);
         setWineRating(estimatedRating);
       }
     } catch (error) {
-      console.error('Error fetching wine rating:', error);
+      console.error('❌ Error fetching wine rating:', error);
       // Fallback to estimated rating
       const estimatedRating = estimateWineRating(wine);
       setWineRating(estimatedRating);
@@ -116,46 +100,39 @@ const WineDetailScreen: React.FC = () => {
     }
   };
 
-  // Fetch wine prices from the internet
+  // Fetch wine prices using your API
   const fetchWinePrice = async (wine: Wine) => {
     try {
       setLoadingPrice(true);
+      console.log('💰 Fetching wine price for:', wine.name);
       
-      // Search for wine prices across multiple platforms
-      const searchQuery = `${wine.name} ${wine.winery || ''} ${wine.vintage || ''} wine price buy`;
+      const response = await vinousAPI.getWinePrice(wine);
       
-      // Example API call to wine price aggregators (like Wine-Searcher, Vivino, etc.)
-      const response = await fetch('YOUR_WINE_PRICE_API_ENDPOINT', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer YOUR_API_KEY'
-        },
-        body: JSON.stringify({
-          query: searchQuery,
-          wine_name: wine.name,
-          vintage: wine.vintage,
-          producer: wine.winery,
-          region: wine.region,
-          country: wine.country
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setWinePrice({
-          price: data.avgPrice || data.price,
-          currency: data.currency || 'USD',
-          source: data.source || 'Wine-Searcher',
-          url: data.url
-        });
+      if (response.success && response.data) {
+        if (response.data.lowest_price) {
+          // Multiple prices available
+          setWinePrice({
+            price: response.data.lowest_price.price,
+            currency: response.data.lowest_price.currency || 'USD',
+            source: response.data.lowest_price.source,
+            url: response.data.lowest_price.url
+          });
+        } else {
+          // Single price estimate
+          setWinePrice({
+            price: response.data.price || 0,
+            currency: response.data.currency || 'USD',
+            source: response.data.source || 'Estimate'
+          });
+        }
+        console.log('✅ Wine price set successfully:', response.data);
       } else {
-        // Fallback to estimated price based on wine characteristics
+        console.log('⚠️ No price data, using fallback');
         const estimatedPrice = estimateWinePrice(wine);
         setWinePrice(estimatedPrice);
       }
     } catch (error) {
-      console.error('Error fetching wine price:', error);
+      console.error('❌ Error fetching wine price:', error);
       // Fallback to estimated price
       const estimatedPrice = estimateWinePrice(wine);
       setWinePrice(estimatedPrice);
@@ -164,58 +141,95 @@ const WineDetailScreen: React.FC = () => {
     }
   };
 
-  // Generate AI-based tasting notes based on grape variety
+  // Generate AI-based tasting notes using your API
   const generateAITastingNotes = async (wine: Wine) => {
     try {
       setLoadingTastingNotes(true);
+      console.log('📝 Generating AI tasting notes for:', wine.name);
       
-      // Use your existing OpenAI API or create a new endpoint for tasting notes
-      const response = await fetch('YOUR_OPENAI_TASTING_NOTES_ENDPOINT', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer YOUR_OPENAI_API_KEY'
-        },
-        body: JSON.stringify({
-          model: "gpt-4",
-          messages: [
-            {
-              role: "system",
-              content: `You are a professional sommelier and wine expert. Generate detailed, authentic tasting notes for wines based on their characteristics. Focus on aroma, flavor profile, texture, and finish. Be specific and use professional wine tasting terminology.`
-            },
-            {
-              role: "user",
-              content: `Generate professional tasting notes for a ${wine.wine_type} wine with these characteristics:
-              - Name: ${wine.name}
-              - Grape Variety: ${wine.grape_variety}
-              - Region: ${wine.region}, ${wine.country}
-              - Vintage: ${wine.vintage}
-              - Producer: ${wine.winery || 'Unknown'}
-              - Alcohol Content: ${wine.alcohol_content || 'Unknown'}
-              
-              Please provide detailed tasting notes covering aroma, palate, and finish in 2-3 sentences.`
-            }
-          ],
-          max_tokens: 200,
-          temperature: 0.7
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const tastingNotes = data.choices[0].message.content.trim();
-        setAiTastingNotes(tastingNotes);
+      const response = await vinousAPI.generateTastingNotes(wine);
+      
+      if (response.success && response.data && response.data.tasting_notes) {
+        setAiTastingNotes(response.data.tasting_notes);
+        console.log('✅ Tasting notes set successfully:', response.data.tasting_notes);
       } else {
-        // Fallback to grape-specific tasting notes
+        console.log('⚠️ No tasting notes data, using fallback');
         const fallbackNotes = generateGrapeBasedTastingNotes(wine);
         setAiTastingNotes(fallbackNotes);
       }
     } catch (error) {
-      console.error('Error generating AI tasting notes:', error);
+      console.error('❌ Error generating AI tasting notes:', error);
       // Fallback to grape-specific tasting notes
       const fallbackNotes = generateGrapeBasedTastingNotes(wine);
       setAiTastingNotes(fallbackNotes);
     } finally {
+      setLoadingTastingNotes(false);
+    }
+  };
+
+  // Alternative: Use the utility method to fetch all data at once
+  const fetchAllWineData = async (wine: Wine) => {
+    try {
+      console.log('🚀 Fetching complete wine data for:', wine.name);
+      
+      // Set all loading states
+      setLoadingRating(true);
+      setLoadingPrice(true);
+      setLoadingTastingNotes(true);
+      
+      const completeData = await vinousAPI.getCompleteWineData(wine);
+      
+      // Handle rating data
+      if (completeData.rating?.success && completeData.rating.data) {
+        setWineRating({
+          score: completeData.rating.data.rating,
+          source: completeData.rating.data.source,
+          maxScore: completeData.rating.data.max_rating || 100
+        });
+        console.log('✅ Rating loaded:', completeData.rating.data);
+      } else {
+        console.log('⚠️ Rating fallback');
+        setWineRating(estimateWineRating(wine));
+      }
+      
+      // Handle price data
+      if (completeData.price?.success && completeData.price.data) {
+        const priceData = completeData.price.data;
+        setWinePrice({
+          price: priceData.lowest_price?.price || priceData.price || 0,
+          currency: priceData.lowest_price?.currency || priceData.currency || 'USD',
+          source: priceData.lowest_price?.source || priceData.source || 'Estimate'
+        });
+        console.log('✅ Price loaded:', priceData);
+      } else {
+        console.log('⚠️ Price fallback');
+        setWinePrice(estimateWinePrice(wine));
+      }
+      
+      // Handle tasting notes
+      if (completeData.tastingNotes?.success && completeData.tastingNotes.data?.tasting_notes) {
+        setAiTastingNotes(completeData.tastingNotes.data.tasting_notes);
+        console.log('✅ Tasting notes loaded:', completeData.tastingNotes.data.tasting_notes);
+      } else {
+        console.log('⚠️ Tasting notes fallback');
+        setAiTastingNotes(generateGrapeBasedTastingNotes(wine));
+      }
+      
+      // Log any errors
+      if (completeData.errors.rating) console.error('Rating error:', completeData.errors.rating);
+      if (completeData.errors.price) console.error('Price error:', completeData.errors.price);
+      if (completeData.errors.tastingNotes) console.error('Tasting notes error:', completeData.errors.tastingNotes);
+      
+    } catch (error) {
+      console.error('❌ Error fetching complete wine data:', error);
+      // Set fallback data for all
+      setWineRating(estimateWineRating(wine));
+      setWinePrice(estimateWinePrice(wine));
+      setAiTastingNotes(generateGrapeBasedTastingNotes(wine));
+    } finally {
+      // Clear all loading states
+      setLoadingRating(false);
+      setLoadingPrice(false);
       setLoadingTastingNotes(false);
     }
   };
@@ -351,7 +365,7 @@ const WineDetailScreen: React.FC = () => {
   // Geocoding function
   const geocodeLocation = async (locationQuery: string): Promise<{ latitude: number; longitude: number } | null> => {
     try {
-      const GOOGLE_MAPS_API_KEY = 'YOUR_GOOGLE_MAPS_API_KEY';
+      const GOOGLE_MAPS_API_KEY = 'YOUR_GOOGLE_MAPS_API_KEY'; // Replace with your actual API key
       const response = await fetch(
         `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(locationQuery)}&key=${GOOGLE_MAPS_API_KEY}`
       );
@@ -406,12 +420,44 @@ const WineDetailScreen: React.FC = () => {
     };
   };
 
+  // Test function for debugging
+  const testAPIEndpoints = async () => {
+    console.log('🧪 Testing API endpoints...');
+    
+    try {
+      // Test health endpoint first
+      const health = await vinousAPI.testConnection();
+      console.log('✅ Health check:', health);
+      
+      // Test each endpoint individually
+      console.log('🔍 Testing rating endpoint...');
+      await fetchWineRating(wine);
+      
+      console.log('💰 Testing price endpoint...');
+      await fetchWinePrice(wine);
+      
+      console.log('📝 Testing tasting notes endpoint...');
+      await generateAITastingNotes(wine);
+      
+      Alert.alert('API Test Complete', 'Check console for detailed results');
+    } catch (error: unknown) {
+      console.error('🧪 API test failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      Alert.alert('API Test Failed', errorMessage);
+    }
+  };
+
   useEffect(() => {
     // Load all data when component mounts
     extractLocationAndGetCoordinates(wine);
-    fetchWineRating(wine);
-    fetchWinePrice(wine);
-    generateAITastingNotes(wine);
+    
+    // Option 1: Fetch all data at once (recommended)
+    fetchAllWineData(wine);
+    
+    // Option 2: Fetch data separately (uncomment to use instead)
+    // fetchWineRating(wine);
+    // fetchWinePrice(wine);
+    // generateAITastingNotes(wine);
   }, [wine]);
 
   const vineyardInfo = generateVineyardInfo(wine);
@@ -466,6 +512,16 @@ const WineDetailScreen: React.FC = () => {
           </LinearGradient>
         )}
       </View>
+
+      {/* Test Button (remove in production) */}
+      {__DEV__ && (
+        <TouchableOpacity 
+          style={styles.testButton} 
+          onPress={testAPIEndpoints}
+        >
+          <Text style={styles.testButtonText}>Test APIs</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Header Overlay */}
       <LinearGradient
@@ -624,7 +680,7 @@ const WineDetailScreen: React.FC = () => {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Market Information</Text>
               <Text style={styles.sectionContent}>
-                {winePrice && `💰 ${winePrice.price} ${winePrice.currency} (${winePrice.source})\n`}
+                {winePrice && `💰 $${winePrice.price} ${winePrice.currency} (${winePrice.source})\n`}
                 {wineRating && `⭐ ${wineRating.score}/${wineRating.maxScore} points (${wineRating.source})\n`}
                 📈 Market data updated in real-time
               </Text>
@@ -771,6 +827,20 @@ const styles = StyleSheet.create({
   },
   markerIcon: {
     fontSize: 20,
+  },
+  testButton: {
+    position: 'absolute',
+    top: 200,
+    right: 20,
+    backgroundColor: '#FF6B6B',
+    padding: 10,
+    borderRadius: 8,
+    zIndex: 1000,
+  },
+  testButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   headerOverlay: {
     position: 'absolute',
