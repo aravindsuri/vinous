@@ -165,23 +165,27 @@ async def get_wines():
     Get all scanned wines from database
     """
     try:
-        # Try to get wines from database
+        print("Attempting to query wines table...")
         response = supabase.table('wines').select('*').execute()
+        print(f"Supabase response: {response}")
+        print(f"Data: {response.data}")
+        print(f"Count: {len(response.data) if response.data else 0}")
         
         return JSONResponse(content={
             "success": True,
             "data": response.data,
-            "message": "Wines retrieved successfully"
+            "message": f"Retrieved {len(response.data) if response.data else 0} wines"
         })
     except Exception as e:
         print(f"Database error: {str(e)}")
-        # Return empty list instead of error for now
+        print(f"Error type: {type(e).__name__}")
         return JSONResponse(content={
-            "success": True,
+            "success": False,
             "data": [],
-            "message": "No wines found"
+            "message": f"Database error: {str(e)}"
         })
 
+        
 @app.post("/api/v1/wines")
 async def save_wine(wine_data: dict):
     """
