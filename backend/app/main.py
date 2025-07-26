@@ -11,6 +11,9 @@ import io
 from typing import Optional, Dict, Any
 import json
 import re
+import socket
+import requests
+
 
 load_dotenv()
 
@@ -79,6 +82,36 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "service": "vinous-api"}
+
+
+@app.get("/debug/network")
+async def debug_network():
+    """Debug network connectivity to Supabase"""
+    results = {}
+    
+    # Test DNS resolution
+    try:
+        ip = socket.gethostbyname("tbnmmnquvvqjcchbovo.supabase.co")
+        results["dns_resolution"] = f"Success: {ip}"
+    except Exception as e:
+        results["dns_resolution"] = f"Failed: {str(e)}"
+    
+    # Test HTTP connection
+    try:
+        response = requests.get("https://tbnmmnquvvqjcchbovo.supabase.co", timeout=10)
+        results["http_connection"] = f"Success: {response.status_code}"
+    except Exception as e:
+        results["http_connection"] = f"Failed: {str(e)}"
+    
+    # Test with different URL format
+    try:
+        response = requests.get("https://supabase.co", timeout=10)
+        results["supabase_main_site"] = f"Success: {response.status_code}"
+    except Exception as e:
+        results["supabase_main_site"] = f"Failed: {str(e)}"
+    
+    return results
+
 
 @app.post("/api/v1/scan-wine-label")
 async def scan_wine_label(file: UploadFile = File(...)):
