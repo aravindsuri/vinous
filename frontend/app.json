@@ -1,32 +1,57 @@
 {
   "expo": {
-    "name": "frontend",
-    "slug": "frontend",
+    "name": "Vinous",
+    "slug": "vinous",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#8B5CF6"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#8B5CF6"
       },
-      "edgeToEdgeEnabled": true
+      "package": "com.vinous.winescanner",
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-maps"
-    ]
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Vinous to access your camera for scanning wine labels."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Vinous to access your photo library to select wine label images."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "d407c5cd-7356-4058-ab7a-2ca767a85136"
+      }
+    }
   }
 }
