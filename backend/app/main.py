@@ -33,7 +33,7 @@ app.add_middleware(
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 supabase: Client = create_client(
     os.getenv("SUPABASE_URL"),
-    os.getenv("SUPABASE_ANON_KEY")
+    os.getenv("SUPABASE_SERVICE_KEY")  # Use service key instead of anon key
 )
 
 def extract_json_from_response(text: str) -> dict:
@@ -185,7 +185,7 @@ async def get_wines():
             "message": f"Database error: {str(e)}"
         })
 
-        
+
 @app.post("/api/v1/wines")
 async def save_wine(wine_data: dict):
     """
