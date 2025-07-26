@@ -165,16 +165,38 @@ async def get_wines():
     Get all scanned wines from database
     """
     try:
+        # Debug environment variables
+        supabase_url = os.getenv("SUPABASE_URL")
+        supabase_key = os.getenv("SUPABASE_SERVICE_KEY")
+        
+        print(f"Environment variables:")
+        print(f"SUPABASE_URL: '{supabase_url}'")
+        print(f"SUPABASE_URL length: {len(supabase_url) if supabase_url else 'None'}")
+        print(f"SUPABASE_SERVICE_KEY exists: {bool(supabase_key)}")
+        print(f"All env vars containing 'SUPABASE': {[k for k in os.environ.keys() if 'SUPABASE' in k]}")
+        
+        if not supabase_url:
+            return JSONResponse(content={
+                "success": False,
+                "data": [],
+                "message": "SUPABASE_URL environment variable not found"
+            })
+            
+        if not supabase_key:
+            return JSONResponse(content={
+                "success": False,
+                "data": [],
+                "message": "SUPABASE_SERVICE_KEY environment variable not found"
+            })
+        
         print("Attempting to query wines table...")
         response = supabase.table('wines').select('*').execute()
-        print(f"Supabase response: {response}")
-        print(f"Data: {response.data}")
-        print(f"Count: {len(response.data) if response.data else 0}")
+        print(f"Success! Retrieved {len(response.data)} wines")
         
         return JSONResponse(content={
             "success": True,
             "data": response.data,
-            "message": f"Retrieved {len(response.data) if response.data else 0} wines"
+            "message": f"Retrieved {len(response.data)} wines"
         })
     except Exception as e:
         print(f"Database error: {str(e)}")
@@ -184,7 +206,6 @@ async def get_wines():
             "data": [],
             "message": f"Database error: {str(e)}"
         })
-
 
 @app.post("/api/v1/wines")
 async def save_wine(wine_data: dict):
